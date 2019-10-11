@@ -141,7 +141,6 @@
 >  在开发中，通常在脚本需要整个 DOM 文档或者脚本的相对执行顺序很重要的时候，使用 defer 属性。而当脚本之间互相独立，比如计数器或者广告，并且它们相对执行顺序不重要的时候，此时使用 async 属性。
 
 
+## 参考
 
-
-
-
+[Scripts: async, defer](https://javascript.info/script-async-defer)
