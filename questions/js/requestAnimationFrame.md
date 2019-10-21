@@ -48,64 +48,106 @@ window.requestAnimFrame = window.requestAnimationFrame || function(callback) {
 
 vue 可拖动指令, 其中处理移动移动事件时，使用`requestAnimationFrame`
 ```javascript
+class Draggable {
+  constructor(el) {
+    this.el = el;
+    this.state = {
+      isdragging: false,
+      position: { x: '', y: '' },
+      prevTouch: { clientX: '', clientY: '' },
+    };
+    this.init();
+  }
+  checkPosition = () => {
+    const position = window
+      .getComputedStyle(this.el)
+      .getPropertyValue('position');
+    if (position !== 'fixed') {
+      console.warn(
+        `The position of the target element must be fixed or absolute, but it is ${position}, so the program automatically modifies it to 'fixed'`
+      );
+      this.el.style.position = 'fixed';
+    }
+  };
+  init = () => {
+    this.checkPosition();
+    this.addListener(this.el, ['mousedown', 'touchstart'], this.handleDown);
+    this.addListener(this.el, ['mousemove', 'touchmove'], this.handleMove);
+    this.addListener(this.el, ['mouseup', 'touchend'], this.handleEnd);
+  };
+  addListener = (element, eventTypes, handler, useCapture = false) => {
+    eventTypes.forEach(eventType =>
+      element.addEventListener(eventType, handler, useCapture)
+    );
+  };
+  checkAxisBounds = (start, len, max, theta = 0) => {
+    // theta 为容错阀值
+    const minBound = start >= 0 - theta; // 是否超出最低边界
+    const maxBound = start + len <= max + theta; // 是否超出最高边界
+    return [minBound && maxBound, minBound];
+  };
+  checkBounds = () => {
+    const { clientWidth, clientHeight } = document.documentElement;
+    const { x, y } = this.el.getBoundingClientRect();
+    const checkXAxis = this.checkAxisBounds(
+      x,
+      this.el.clientWidth,
+      clientWidth
+    );
+    const checkYAxis = this.checkAxisBounds(
+      y,
+      this.el.clientHeight,
+      clientHeight
+    );
+    if (!checkXAxis[0]) {
+      this.el.style.left = checkXAxis[1]
+        ? `${clientWidth - this.el.clientWidth}px`
+        : 0;
+    }
+    if (!checkYAxis[0]) {
+      this.el.style.top = checkYAxis[1]
+        ? `${clientHeight - this.el.clientHeight}px`
+        : 0;
+    }
+  };
+  updatePosition = e => {
+    if (this.state.isdragging) {
+      let touch = e.touches ? e.touches[0] : e;
+      this.el.style.left = `${this.state.position.x +
+        touch.clientX -
+        this.state.prevTouch.clientX}px`;
+      this.el.style.top = `${this.state.position.y +
+        touch.clientY -
+        this.state.prevTouch.clientY}px`;
+    }
+  };
+  handleDown = e => {
+    this.state.isdragging = true;
+    let touch = e.touches ? e.touches[0] : e;
+    this.state.prevTouch.clientX = touch.clientX;
+    this.state.prevTouch.clientY = touch.clientY;
+    this.state.position.x = this.el.offsetLeft;
+    this.state.position.y = this.el.offsetTop;
+  };
+  handleMove = e => {
+    e.preventDefault();
+    let scheduledAnimationFrame = false;
+    if (scheduledAnimationFrame) return;
+    scheduledAnimationFrame = true;
+    window.requestAnimationFrame(() => {
+      scheduledAnimationFrame = false;
+      this.updatePosition(e);
+    });
+  };
+  handleEnd = () => {
+    this.state.isdragging = false;
+    this.checkBounds();
+  };
+}
 Vue.directive('drag', {
   drag: {
     inserted (el) {
-      let prevTouch = { clientX: 0, clientY: 0 }
-      let self = { x: '', y: '' }
-      el.isdragging = false
-      function addListener (element, eventTypes, handler, useCapture = false) {
-        eventTypes.forEach(eventType => element.addEventListener(eventType, handler, useCapture))
-      }
-      function checkAxisBounds (start, len, max, theta = 50) { // theta 为容错阀值
-        const minBound = (start >= (0 - theta)) // 是否超出最低边界
-        const maxBound = (start + len) <= (max + theta) // 是否超出最高边界
-        return [minBound && maxBound, minBound]
-      }
-      function checkBounds () {
-        const { clientWidth, clientHeight } = document.documentElement
-        const { x, y } = el.getBoundingClientRect()
-        const checkXAxis = checkAxisBounds(x, el.clientWidth, clientWidth)
-        const checkYAxis = checkAxisBounds(y, el.clientHeight, clientHeight)
-        if (!checkXAxis[0]) {
-          el.style.left = checkXAxis[1] ? `${clientWidth - el.clientWidth}px` : 0
-        }
-        if (!checkYAxis[0]) {
-          el.style.top = checkYAxis[1] ? `${clientHeight - el.clientHeight}px` : 0
-        }
-      }
-      function updatePosition (e) {
-        if (el.isdragging) {
-          let touch = e.touches ? e.touches[0] : e
-          el.style.left = `${self.x + touch.clientX - prevTouch.clientX}px`
-          el.style.top = `${self.y + touch.clientY - prevTouch.clientY}px`
-        }
-      }
-      function handleDown (e) {
-        el.isdragging = true
-        let touch = e.touches ? e.touches[0] : e
-        prevTouch.clientX = touch.clientX
-        prevTouch.clientY = touch.clientY
-        self.x = el.offsetLeft
-        self.y = el.offsetTop
-      }
-      function handleMove (e) {
-        e.preventDefault()
-        let scheduledAnimationFrame = false
-        if (scheduledAnimationFrame) return
-        scheduledAnimationFrame = true
-        window.requestAnimationFrame(() => {
-          scheduledAnimationFrame = false
-          updatePosition(e)
-        })
-      }
-      function handleEnd () {
-        el.isdragging = false
-        checkBounds()
-      }
-      addListener(el, ['mousedown', 'touchstart'], handleDown)
-      addListener(el, ['mousemove', 'touchmove'], handleMove)
-      addListener(el, ['mouseup', 'touchend'], handleEnd)
+      new Draggable(el);
     }
   }
 })
