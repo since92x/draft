@@ -58,7 +58,7 @@ new User(); // function User { ... }
 ## 实现new操作符 
 
 ```javascript
-function _new (ctor, ...args) {
+function newOperator (ctor, ...args) {
     if(typeof ctor !== 'function'){
       throw 'First param must be a function';
     }
