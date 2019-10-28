@@ -109,7 +109,26 @@ Child.prototype.sayAge = function () { // 对子类添加自己的方法
 
 这是最成熟的方法，也是现在库实现的方法
 
-# 
+# extends关键字
+
+下面是extends的实现，和寄生组合继承一样:
+
+```javascript
+functioon _extends(Child, Parent) {
+  Child.prototype = Object.create(Parent && Parent.prototype, { // Child.prototype.__proto__= Parent.prototype;
+    constructor: {
+      value: Child,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  })
+  if (Parent) {
+    Object.setPrototypeOf ? Object.setPrototypeOf(Child, Parent) : Child.__prototype__ = Parent
+  }
+}
+
+```
 
 
 
