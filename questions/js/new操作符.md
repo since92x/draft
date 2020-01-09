@@ -1,12 +1,11 @@
 ```javascript
-function _new(ctor, ...args) {
-  const newObj = Object.create(ctor);
-  const ctorResult = ctor.apply(newObj, args);
-  const isObject =
-    typeof ctorReturnResult === 'object' && ctorReturnResult !== null;
-  const isFunction = typeof ctorReturnResult === 'function';
-  if (isObject || isFunction) {
-    return ctorReturnResult;
+function _new(Constructor, ...args) {
+  const newObj = Object.create(Constructor.prototype);
+  const cotrReturn = Constructor.apply(newObj, args);
+  const isFun = typeof cotrReturn === 'function';
+  const isObj = typeof cotrReturn === 'object' && cotrReturn !== null;
+  if (isFun || isObj) {
+    return cotrReturn;
   }
   return newObj;
 }
